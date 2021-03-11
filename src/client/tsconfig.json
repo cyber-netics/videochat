@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "noImplicitAny": true,
+    "target": "es6",
+    "module": "esnext",
+    "strict": true,
+    "jsx": "react",
+    "skipLibCheck": true
+  }
+}

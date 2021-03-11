@@ -1,0 +1,27 @@
+version: "2.2"
+services:
+  ## Nginx ##
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: ./src/nginx
+
+  ## Client ##
+  client:
+    image: client:latest
+    container_name: client
+    restart: on-failure
+    build:
+      context: ./src/client
+      dockerfile: Dockerfile
+
+  ## Backend ##
+  backend:
+    image: backend:latest
+    restart: on-failure
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile

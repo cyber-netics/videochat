@@ -1,0 +1,50 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+
+  pre_build:
+    commands:
+      # Install Test depends
+      - npm install
+
+      # Unit/Integrations Test
+      - bash ./scripts/unit_test.sh
+
+      # E2E Test
+      - bash ./scripts/e2e_test.sh
+
+  build:
+    commands:
+      # Build Production Images
+      - bash ./scripts/production_builds.sh
+
+      # Create artifacts
+      - bash ./scripts/create_artifacts.sh $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION
+
+  post_build:
+    commands:
+      # Login to aws ECR
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+      # Tag images for ECR
+      - docker tag backend $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend:latest
+      - docker tag client $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/client:latest
+      - docker tag nginx $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/nginx:latest
+
+      # Push each image to aws ECR
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/client:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/nginx:latest
+
+      # # Update Lambda functions
+      - npm run deploy:lambda $AWS_DEFAULT_REGION
+
+artifacts:
+  name: artifacts
+  files:
+    # Artifacts for codeDeploy, stores in S3
+    - ./appSpec.yml
+    - ./taskdef.json

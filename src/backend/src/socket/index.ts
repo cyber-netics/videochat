@@ -1,23 +1,11 @@
-const socket = (io: any) => {
-  const users: any = {};
+import controller from "../controller/sockets";
+
+const socket = (io: any, chache: any) => {
+  // let users: any = {};
 
   io.on("connection", (socket: any) => {
-    console.log("connecting .....");
-
     socket.on("join room", () => {
-      users[socket.id] = {
-        id: socket.id,
-        busy: false,
-        caller: null,
-      };
-
-      Object.keys(users).map(user => {
-        if (users[user].id !== socket.id && !users[user].busy) {
-          socket.emit("all users", [users[user]]);
-          users[socket.id].caller = users[user].id;
-          users[users[user].id].caller = socket.id;
-        }
-      });
+      controller.joinCall(socket, chache);
     });
 
     socket.on("sending signal", (payload: any) => {
@@ -25,7 +13,6 @@ const socket = (io: any) => {
         signal: payload.signal,
         callerID: payload.callerID,
       });
-      users[socket.id].busy = true;
     });
 
     socket.on("returning signal", (payload: any) => {
@@ -33,20 +20,14 @@ const socket = (io: any) => {
         signal: payload.signal,
         id: socket.id,
       });
-      users[socket.id].busy = true;
+    });
+
+    socket.on("endcall", (data: any) => {
+      io.to(data).emit("listen caller", "testing...xxxx");
     });
 
     socket.on("disconnect", () => {
-      // current user
-      const user = socket.id;
-      delete users[user];
-
-      // caller
-      if (users[socket.id] && users[socket.id].caller) {
-        const caller = users[socket.id].caller;
-        users[caller].busy = false;
-        users[caller].caller = null;
-      }
+      controller.disconnect(socket, chache);
     });
   });
 };

@@ -1,41 +1,53 @@
 import express from "express";
 import { createServer } from "http";
 import socket from "../socket";
-
-type IPort = number;
-type IHttp = IServerHttp;
-type IIO = ISockerIo;
-
-interface ISockerIo {
-  sockets: any;
-}
+import Redis from "../chache";
 
 interface IServer {
-  app: express.Application;
   start: () => void;
 }
 
-interface IServerHttp {
+interface IHttp {
   listen: (port: IPort, cb: () => void) => void;
 }
 
+// interface IRedis {
+//   connect: any;
+// }
+
+type IPort = number;
+// type IRedisClient = IRedis | undefined;
+type IApp = express.Application;
+
+/**
+ * @param{port} number
+ * @param{redisport} number
+ */
+
 class Server implements IServer {
-  public app = express.application;
   private port: IPort = 3001;
+  private redisPort: IPort = 6379;
+
+  private chache: any;
   private http: IHttp;
-  private io: IIO;
 
   constructor() {
-    this.app = express();
-    this.middlewares();
+    const app = express();
+    this.http = createServer(app);
 
-    this.http = createServer(this.app);
-    this.io = require("socket.io")(this.http);
+    this.middlewares(app);
+    this.connectCaching();
   }
 
-  private middlewares(): void {
-    this.app.use(express.json());
-    this.app.use(
+  private connectCaching() {
+    this.chache = new Redis({
+      port: this.redisPort,
+    });
+  }
+
+  private middlewares(app: IApp): void {
+    app.use(express.json());
+    app.use(
       express.urlencoded({
         extended: false,
       })
@@ -44,7 +56,8 @@ class Server implements IServer {
 
   public start(): void {
     this.http.listen(this.port, () => {
-      socket(this.io);
+      const io = require("socket.io");
+      socket(io(this.http), this.chache);
     });
   }
 }

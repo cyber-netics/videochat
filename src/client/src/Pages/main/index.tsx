@@ -33,6 +33,7 @@ const MainPage = (props: any): any => {
         socketRef.current.emit("join room", roomID)
 
         socketRef.current.on("all users", (users: any) => {
+          console.log("users", users)
           const peers: any = []
           users.forEach((user: any) => {
             const peer = createPeer(user.id, socketRef.current.id, stream)
@@ -40,6 +41,7 @@ const MainPage = (props: any): any => {
               peerID: user.id,
               peer,
             })
+            console.log("peers", peers)
             peers.push(peer)
           })
           setPeers(peers)
@@ -63,9 +65,10 @@ const MainPage = (props: any): any => {
         })
       })
 
-    socketRef.current.on("listen caller", () => {
+    socketRef.current.on("callerends", () => {
       setPeers([])
-      socketRef.current.emit("join room", roomID)
+      peersRef.current = []
+      socketRef.current.emit("join room")
     })
   }, [])
 
@@ -88,9 +91,12 @@ const MainPage = (props: any): any => {
   }
 
   function nextUser() {
-    setPeers([])
-    socketRef.current.emit("endcall", peersRef.current[0].peerID)
-    socketRef.current.emit("join room", roomID)
+    if (peersRef.current.length) {
+      setPeers([])
+      peersRef.current = []
+      socketRef.current.emit("endcall", peersRef.current[0].peerID)
+      socketRef.current.emit("join room", roomID)
+    }
   }
 
   function addPeer(incomingSignal: any, callerID: any, stream: any) {

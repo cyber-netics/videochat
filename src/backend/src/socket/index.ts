@@ -22,8 +22,29 @@ const socket = (io: any, chache: any) => {
       });
     });
 
-    socket.on("endcall", (data: any) => {
-      io.to(data).emit("listen caller", "testing...xxxx");
+    socket.on("endcall", async (callerId: any) => {
+      let data = await chache.get(callerId);
+      if (data.caller) {
+        chache.set(
+          data.caller,
+          JSON.stringify({
+            id: data.caller,
+            busy: false,
+            caller: null,
+          })
+        );
+      }
+
+      chache.findAll().then(async (users: any) => {
+        for (let user in users) {
+          if (users[user] !== socket.id) {
+            let caller = await chache.get(users[user]);
+            io.to(callerId).emit("callerends", [caller]);
+            console.log("matchuser", caller);
+            break;
+          }
+        }
+      });
     });
 
     socket.on("disconnect", () => {
